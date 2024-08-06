@@ -1,0 +1,404 @@
+---
+title: "BINF5503 - Final Project Code + Paper"
+author: "Karolina Urbanovich - 1006401029, Harsh Aulakh"
+date: "2024-03-31"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+##Introduction to Ovarian Cancer
+● Ovarian cancer accounts for 2.5% of cancers in women
+● It is the 11th most common cancer among women
+● It is the 5th leading cause of cancer-related deaths in women. 
+https://ocrahope.org/get-the-facts/statistics/#:~:text=A%20woman's%20lifetime%20risk%20of,ovarian%20cancer%20is%2050.8%25%20percent.
+
+- Due to drug resistance, majority of metastatic disease is incurable. 
+- Preclinical models have emerged as a useful resource to study cancer mechanisms and predict efcacy of anticancer drugs
+- Multicellular spheroids (MCS) serve as an alternative to patient-derived xenograft models for drug testing.
+https://www.frontiersin.org/articles/10.3389/fbioe.2023.1190637/full
+
+Epithelial is the most common ovarian cancer. Four gene mutations are most commonly reported to be highly associated with epithelial ovarian cancer, including: TP53, BRCA1/2, PIK3CA, and KRAS. 
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10647767/#:~:text=Four%20gene%20mutations%20are%20most,2%2C%20PIK3CA%2C%20and%20KRAS. 
+
+(There are 29 overall pathways in Reactome)
+According to Reactome:
+TP53 is involved in:
+  Cell Cycle (Homo sapiens)
+  Cellular responses to stimuli (Homo sapiens)
+  DNA Repair (Homo sapiens)
+  Gene expression (Transcription) (Homo sapiens)
+  Hemostasis (Homo sapiens)
+  Immune System (Homo sapiens)
+  Metabolism of proteins (Homo sapiens)
+  Signal Transduction (Homo sapiens)
+BRCA1/2 is involved in:
+  Cell Cycle (Homo sapiens)
+  Cellular responses to stimuli (Homo sapiens)
+  DNA Repair (Homo sapiens)
+  Disease (Homo sapiens)
+  Gene expression (Transcription) (Homo sapiens)
+  Metabolism of proteins (Homo sapiens)
+  Reproduction (Homo sapiens)
+PIK3CA is involved in:
+  Cell-Cell communication (Homo sapiens)
+  Developmental Biology (Homo sapiens)
+  Disease (Homo sapiens)
+  Hemostasis (Homo sapiens)
+  Immune System (Homo sapiens)
+  Metabolism (Homo sapiens)
+  Signal Transduction (Homo sapiens)
+KRAS is involved in:
+  Disease (Homo sapiens)
+  Gene expression (Transcription) (Homo sapiens)
+  Signal Transduction (Homo sapiens)
+
+Disease, gene expression, and signal transduction are the most common between all
+More specifically:
+- Diseases of signal transduction by growth factor receptors and second messengers
+- Diseases of DNA repair (Homo sapiens)
+- RNA Polymerase II Transcription (Homo sapiens)
+- MAPK family signaling cascades (Homo sapiens)
+- Intracellular signaling by second messengers (Homo sapiens)
+
+
+##Introduction to Dataset: 
+ 
+The dataset we chose is Dataset #1, or Genomics + Cancer: Drug Sensitivy testing carcinoma. This dataset is derived from cancer patient-derived organoids (PDOs), specifically from patients with recurrent ovarian cancer. Malignant effusions, resistant to chemotherapy, are obtained during routine palliative procedures for ascites or pleural effusions. Multicellular spheroids (MCS) within these effusions serve as an alternative to patient-derived xenograft models for drug testing. The dataset includes RNA-sequencing data at two time points during short-term culture, providing insights into transcriptome changes in response to culture conditions. 
+
+##Description of Data: 
+
+The dataset consists of 8 TSV files, each containing three columns: Ensembl Gene Record, Common gene name, and Read counts. The files represent RNA-sequencing data at two time points (Day 0 and Day 6) for four different samples (A778, A820, A870, and A899). The read counts provide quantitative information on gene expression levels.
+
+##Similar Research
+In a study done by Chen and colleagues in 2020, the authors looked to develop a short duration culture of MCS from ovarian cancer malignant effusions in conditions selected to support organoid growth and use them as a platform for empirical drug sensitivity testing.
+They used similar methods as described in the introduction for the collection of said multicellular spheroids and also looked to determine changes in transcriptome in response to culture conditions.
+Through RNA-seq analysis they found that there was significant up-regulation of genes related to cellular proliferation, epithelial-mesenchymal transition, and KRAS signaling pathways (Chen et al., 2020). 
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7819712/
+
+In a study done by Li, Sun, and Wong, they found that the pathways that are most often dysregulated in cancers include cell cycle, DNA replication, repair, and recombination, Notch signaling, p53 signaling, Wnt signaling, TGF-beta signaling, immune response etc. The study also identified several genes that were consistently upregulated (E2F1, EZH2, FOXM1, MYBL2, PLK1, TTK, AURKA/B and BUB1) and downregulated (SCARA5, MYOM1, NKAPL, PEG3, USP2, SLC5A7 and HMGCLL1) across several cancer types (Li et al., 2017).
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5470989/#:~:text=SYNE1%20has%20been%20shown%20to,cancers%20%5B67%E2%80%9369%5D.
+
+
+##Research Question + Hypothesis
+Using the data described above, are any of the most dysregulated genes potential novel targets for cancer therapy?
+We predict that genes involved in diseases of signal transduction by growth factor receptors and second messengers, diseases of DNA repair, RNA Polymerase II Transcription, MAPK family signaling cascades, and Intracellular signaling by second messengers will be some of the most dysregulated. 
+
+Given there are some genes that are novel targets, what pathways are they involved in and have they been researched thoroughly?
+
+##Potential Roadblocks and Mitigation Strategies: 
+
+
+
+Batch Effects: Address potential batch effects introduced during RNA-sequencing by employing normalization techniques and statistical methods to account for variability between samples. 
+
+Limited Time Points: Acknowledge the limitation of only having two time points and consider leveraging other experimental replicates or time points if available to enhance the robustness of the analysis. 
+
+Annotation Discrepancies: Ensure consistency in gene annotations between Ensembl Gene Records and common gene names. Address any discrepancies to maintain accuracy in downstream analyses. 
+
+Biological Variability: Recognize that individual patient-derived organoids may exhibit inherent biological variability. Consider strategies such as pooling data or incorporating patient-specific information to account for this variability.
+```{r}
+options(tinytex.verbose = TRUE)
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+#libraries
+library(tidyverse)
+library(ggfortify)
+library(dplyr)
+library(DESeq2)
+library(GeneTonic)
+library(rempsyc)
+library(EnhancedVolcano)
+library(apeglm)
+library(RColorBrewer)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+```
+
+```{r}
+# reading in files
+A778_D0 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A778_D0_gene.tsv', sep="\t", header=FALSE)
+A778_D6 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A778_D6_gene.tsv', sep="\t", header=FALSE)
+A820_D0 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A820_D0_gene.tsv', sep="\t", header=FALSE)
+A820_D6 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A820_D6_gene.tsv', sep="\t", header=FALSE)
+A870_D0 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A870_D0_gene.tsv', sep="\t", header=FALSE)
+A870_D6 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A870_D6_gene.tsv', sep="\t", header=FALSE)
+A899_D0 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A899_D0_gene.tsv', sep="\t", header=FALSE)
+A899_D6 <- read.csv('C:/Users/kk_mi/OneDrive/Documents/BINF5003 R Files/1_Genetics/1_Genetics/read_counts/A899_D6_gene.tsv', sep="\t", header=FALSE)
+```
+
+```{r}
+#checking for NAs
+all_data <- list(A778_D0, A778_D6, A820_D0, A820_D6, A870_D0, A870_D6, A899_D0, A899_D6)
+
+for (x in all_data){
+  print(sum(is.na(x)))
+}
+```
+```{r}
+#creating countdata
+#total counts
+cd <- bind_cols(A778_D0, A778_D6[3], A820_D0[3], A820_D6[3], A870_D0[3], 
+                A870_D6[3], A899_D0[3], A899_D6[3])
+
+names(cd)[1] <- "ensembl"
+names(cd)[2] <- "gene_name"
+names(cd)[3] <- "A778_D0"
+names(cd)[4] <- "A778_D6"
+names(cd)[5] <- "A820_D0"
+names(cd)[6] <- "A820_D6"
+names(cd)[7] <- "A870_D0"
+names(cd)[8] <- "A870_D6"
+names(cd)[9] <- "A899_D0"
+names(cd)[10] <- "A899_D6"
+
+head(cd)
+CountData <- bind_cols(cd[1], cd[3:10])
+head(CountData)
+```
+
+```{r}
+#making metadata
+# need ea. sample
+id <- colnames(cd)[3:10]
+#info abt samples
+# all MCS
+org_type <- c('MCS', 'MCS', 'MCS', 'MCS', 'MCS', 'MCS', 'MCS', 'MCS')
+# 2 for every media type
+media <- c('A778', 'A778', 'A820', 'A820', 'A870', 'A870', 'A899', 'A899')
+des <- c('control', 'treated', 'control', 'treated', 'control', 'treated', 'control', 'treated')
+sample_info <- data.frame(id, des, media, org_type)
+head(sample_info)
+```
+```{r}
+#making DESEQDataSet Object
+dds <- DESeqDataSetFromMatrix(countData=CountData, 
+                              colData=sample_info, 
+                              design=~des, tidy = TRUE)
+
+dds <- DESeq(dds)
+
+res <- results(dds)
+head(results(dds, tidy=TRUE))
+
+summary(res)
+
+#sorting summary by p value
+res <- res[order(res$padj),]
+head(res)
+```
+
+```{r}
+#different deseq design formula (controlling for media)
+dds2 <- DESeqDataSetFromMatrix(countData=CountData, 
+                               colData=sample_info, 
+                               design=~media + des, tidy = TRUE)
+
+dds2 <- DESeq(dds2)
+res2 <- results(dds2)
+```
+
+```{r}
+# Create a dictionary of ensembl to gene name
+ens <- cd$ensembl
+genes <- cd$gene_name
+ens_to_gene <- setNames(genes, ens)
+  
+#volcano plot
+vol1 <- EnhancedVolcano(res, lab = ens_to_gene[rownames(res)],
+                        x = 'log2FoldChange',
+                        y = 'pvalue',
+                        title = str_wrap('Volcano Plot for Results of DESeq Formula ~des',
+                                         45),
+                        pointSize = 3.0,
+                        xlim = c(-10, 10),
+                        labSize = 6.0)
+
+vol2 <- EnhancedVolcano(res2, lab = ens_to_gene[rownames(res2)],
+                        x = 'log2FoldChange',
+                        y = 'pvalue',
+                        title = str_wrap('Volcano Plot for Results of DESeq Formula ~media + des',
+                                         45),
+                        pointSize = 3.0,
+                        xlim = c(-10, 10),
+                        labSize = 6.0)
+
+vol1
+vol2
+```
+
+
+```{r}
+#MA plot of normal design (~des) 
+plotMA(res, ylim=c(-2,2))
+#not super informative
+
+#MA Plot showing log2 fold changes attributable to a given variable over the mean 
+#of normalized counts for all the samples 
+#points will be colored blue if the adjusted p value is less than 0.1. 
+#Points which fall out of the window are plotted as open triangles pointing either up or down.
+plotMA(res2, ylim=c(-2,2), 
+       main=str_wrap("MA Plot of Gene Expression Change with
+                     ~media + des DESeq Formula", 45))
+#more useful to visualize the MA-plot for the shrunken log2 fold changes, 
+#which remove the noise associated with log2 fold changes from low count genes 
+#without requiring arbitrary filtering thresholds.
+res2LFC <- lfcShrink(dds2, coef="des_treated_vs_control", type="apeglm")
+plotMA(res2LFC, ylim=c(-2,2), 
+       main=str_wrap("MA Plot of Shrunken Log2 Fold Changes of Gene 
+                     Expression Data with ~media + des DESeq Formula", 45))
+```
+
+```{r}
+#heatmap
+#To explore a count matrix, it is often instructive to look at it as a heatmap. 
+library("pheatmap")
+ntd <- normTransform(dds)
+select <- order(rowMeans(counts(dds,normalized=TRUE)),
+                decreasing=TRUE)[1:20]
+df <- as.data.frame(colData(dds)[,c("des","media")])
+pheatmap(assay(ntd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df, 
+         main="Heatmap Comparing Gene Expression Levels Between Samples")
+```
+
+```{r}
+#A heatmap of a distance matrix gives an overview over similarities and 
+#dissimilarities between samples. We have to provide a hierarchical clustering 
+#hc to the heatmap function based on the sample distances, or else the heatmap 
+#function would calculate a clustering based on the distances between the 
+#rows/columns of the distance matrix.
+vsd <- vst(dds, blind=FALSE)
+
+sampleDists <- dist(t(assay(vsd)))
+
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vsd$media, vsd$des, sep="-")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors,
+         main = "Heatmap of the Distance Matrix between ")
+
+```
+
+```{r}
+#Related to the distance matrix is the PCA plot, which shows the samples in the
+#2D plane spanned by their first two principal components. This type of plot is 
+#useful for visualizing the overall effect of experimental covariates and batch effects.
+
+pcaData <- plotPCA(vsd, intgroup=c("media", "des"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=media, shape=des)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+```
+
+```{r}
+res_ord <- res[order(res$padj),]
+res_df <- deseqresult2df(res_ord)
+head(res_df)
+
+#percent of genes that have padj less than 0.001
+all_genes <- subset(res, padj)
+statistic_genes <- subset(res, padj <.001)
+nrow(statistic_genes)/nrow(all_genes)*100
+nrow(statistic_genes) #total # of genes wil padj<0.001
+
+top74ens <- res_df$id[1:74]
+top74ens <- sub('\\.[0-9]*$', '', top74ens)
+# rownames(res) <- ens
+```
+```{r}
+#gene names of ensembl list
+#ensembl_gene_top <- res_df$id[1:74]
+gene_top_sym <- c()
+for (i in 1:74){
+  gene_top_sym[i] <- cd[cd$ensembl == res_df$id[i], 'gene_name']
+}
+
+#library("drugTargetInteractions")
+#can try to attempt this package to see if you can figure out drug interactions through code
+
+drug_targets <- c('AURKA', 'MMP9', 'AOC1', 'MVK', 'LYVE1', 'CYP1A1', 'FCGR3A', 
+                  'SFN', 'UBE2T', 'SCD', 'FOS', 'SLC11A1', 'DPYSL3', 'DEFB4A',
+                  'TNNT2', 'EGR1', 'VCAN', 'OLR1', 'ATF3', 'NR4A1', 'PLAU', 'FPR1',
+                  'MMP1', 'LTB', 'PCSK9', 'LIPG', 'SLC2A5', 'TAGLN')
+
+not_target <- setdiff(gene_top_sym, drug_targets)
+not_target
+length(not_target)
+```
+According to DGIdb:
+AURKA, MMP9, AOC1, MVK, LYVE1, CYP1A1, FCGR3A, SFN, UBE2T, SCD, FOS, SLC11A1, DPYSL3, DEFB4A, TNNT2, EGR1, VCAN, OLR1, ATF3, NR4A1, PLAU, FPR1, MMP1, LTB, PCSK9, LIPG, SLC2A5, TAGLN all have some sort of drug interactions (whether approved or not), but aka have been explored as drug targets. 
+
+We can see that 46 of the top 74 DEGs don't have any drug interactions
+
+```{r}
+#learning reactomepa
+library(ReactomePA)
+library(DOSE)
+library(org.Hs.eg.db)
+
+#map ensembl id to entrez id
+orgDb_mapID <- AnnotationDbi::mapIds(org.Hs.eg.db,
+                                     keys = top74ens,  
+                                     column = "ENTREZID",
+                                     keytype = "ENSEMBL")
+
+#function to get list of entrez ids
+map_to_entrez <- function(ensembl_ids, mapping_dict) {
+  entrez_ids <- sapply(ensembl_ids, function(id) mapping_dict[[id]])
+  return(entrez_ids)
+}
+
+de <- unname(map_to_entrez(top74ens, orgDb_mapID))
+
+#ReactomePA
+z <- enrichPathway(gene=de, pvalueCutoff = 0.05, readable=T)
+
+head(as.data.frame(z))
+barplot(z, showCategory=9)
+dotplot(z, showCategory=9)
+#NGF-stimulated transcription -> signal transduction
+#Nuclear Events -> signal transduction
+#signaling by NTRK1 -> signal transduction
+#signaling by NTRKs -> signal transduction
+#Cholesterol biosynthesis -> metabolism
+#activation of gene expression by SREBF -> metabolism
+#metabolism of steroids -> metabolism
+#regulation of cholesterol biosynthesis -> metabolism
+#neutrophil degranulation -> immune system
+
+library(enrichplot)
+x2 <- pairwise_termsim(z)
+emapplot(x2)
+#cnetplot(x2, categorySize="pvalue", foldChange=geneList)
+```
+One of the main pathways is same as in intro (signal transduction)
+Other Pathways are Metabolism and Immune System -> potential for new drug targets
+
+```{r}
+dds11 <- estimateSizeFactors(dds)
+badgenes<-names(which(apply(counts(dds11), 1, function(x){sum(x < 5)}) > 0.9 * ncol(dds11)))
+ddsFiltered <- dds11[which(!rownames(dds) %in% badgenes), ]
+#perform deseq analysis, prevent deseq from inserting p-adj values which are NA, insert p-adj values, subset all DEGs 
+ddsFiltered<-DESeq(ddsFiltered)
+res11<-results(ddsFiltered, cooksCutoff=FALSE, independentFiltering=FALSE)
+filtered<-counts(ddsFiltered) 
+filtered<-as.data.frame(filtered)
+filtered<-filtered%>%mutate(padj=res11$padj)
+all_diff_genes <-subset(filtered,filtered$padj<0.05)
+#create heatmap with only the DEGs
+rld11 <- vst(ddsFiltered, blind=FALSE)
+de11<- rownames(res11[res11$padj<0.05, ])
+de_mat <- assay(rld11)[de11,]
+pheatmap(de_mat,show_rownames = F,show_colnames = F,annotation_col =df)
+```
+
